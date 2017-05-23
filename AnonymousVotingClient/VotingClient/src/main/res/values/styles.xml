@@ -1,0 +1,30 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+
+    <style name="SignInScreenTheme" parent="AppTheme.NoActionBar">
+        <item name="android:colorBackground">@color/colorPrimary</item>
+        <item name="android:textColor">@color/textColourSignInAndSignUp</item>
+        <item name="android:textColorPrimary">@color/textColourSignInAndSignUp</item>
+        <item name="android:textSize">@dimen/sign_in_and_sign_up_text_size</item>
+        <item name="android:buttonStyle">@style/SignInButtonStyle</item>
+    </style>
+
+    <style name="SignInButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_sign_in</item>
+    </style>
+
+</resources>
