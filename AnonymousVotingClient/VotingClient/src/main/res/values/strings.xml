@@ -1,18 +1,20 @@
 <resources>
-    <string name="app_name">AnonymousVotingClient</string>
-    <string name="candidate1">Кандидат №1</string>
-    <string name="candidate2">Кандидат №2</string>
-    <string name="candidate3">Кандидат №3</string>
-    <string name="candidate4">Кандидат №4</string>
-    <string name="candidate5">Кандидат №5</string>
+    <string name="app_name">Клиент</string>
+
+    <string name="candidate1">Кандидат №1: </string>
+    <string name="candidate2">Кандидат №2: </string>
+    <string name="candidate3">Кандидат №3: </string>
+    <string name="candidate4">Кандидат №4: </string>
+    <string name="candidate5">Кандидат №5: </string>
 
     <string name="email">E-mail</string>
     <string name="password">Пароль</string>
     <string name="sign_in">Учавствовать в выборах</string>
     <string name="sign_in_error">Ошибка входа</string>
 
-    <string name="send">Отправить</string>
-    <string name="check">Проверить биллетень</string>
+    <string name="send_bulletin">Отправить биллетень</string>
+    <string name="check_bulletin">Проверить биллетень</string>
+    <string name="show_results">Посмотреть результаты</string>
 
     <string name="you_can_vote">Вы можете голосовать</string>
     <string name="you_can_not_vote">Вы не можете голосовать повторно</string>

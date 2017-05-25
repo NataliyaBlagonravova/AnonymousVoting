@@ -99,9 +99,9 @@ public class CryptographicTools {
 
     public static boolean checkHash(String message, String sign, Key publicKey) {
         byte[] messageBytes = Base64.decode(message, Base64.DEFAULT);
-        byte[] signByted = Base64.decode(sign, Base64.DEFAULT);
+        byte[] signBytes = Base64.decode(sign, Base64.DEFAULT);
         byte[] checkHash = hash(messageBytes);
-        byte[] decHashed = decryptMessage(signByted, publicKey);
+        byte[] decHashed = decryptMessage(signBytes, publicKey);
 
         if (checkHash.length != 16 || decHashed.length != 16) {
             return false;

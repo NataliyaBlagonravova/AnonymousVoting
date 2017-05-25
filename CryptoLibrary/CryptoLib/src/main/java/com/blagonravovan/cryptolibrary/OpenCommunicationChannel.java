@@ -2,11 +2,34 @@ package com.blagonravovan.cryptolibrary;
 
 import android.util.Log;
 
-import com.blagonravovan.cryptolibrary.messages.*;
-import com.google.firebase.database.*;
+import com.blagonravovan.cryptolibrary.messages.RegisterBulletinMessage;
+import com.blagonravovan.cryptolibrary.messages.SecretKeyMessage;
+import com.blagonravovan.cryptolibrary.messages.SignInMessage;
+import com.blagonravovan.cryptolibrary.messages.SignedBulletinMessage;
+import com.blagonravovan.cryptolibrary.messages.VotingResultMessage;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 
 public class OpenCommunicationChannel {
+    private static final String TAG = OpenCommunicationChannel.class.getSimpleName();
+
+    private static final String SIGN_IN_MESSAGE = "sign_in_message";
+    private static final String REGISTER_BULLETIN_MESSAGE = "register_bulletin_message";
+    private static final String VOTE_IS_RUNNING = "vote_is_running";
+    private static final String VOTE_RESULTS = "vote_results";
+    private static final String SECRET_KEY_MESSAGE = "secret_key_message";
+    private static final String SIGN_IN_RESPONSE = "sign_in_response";
+    private static final String REGISTER_BULLETIN_RESPONSE = "register_bulletin_response";
+    private static final String BULLETIN_COUNTED = "bulletin_counted";
+    private static final String SERVER_PUBLIC_KEY = "server_public_key";
+    private static final String SIGNED_BULLETIN_MESSAGE = "signed_bulletin_message";
+    private static final String CHECK_VOTE_REQUEST = "check_vote_request";
+    private static final String CHECK_VOTE_RESPONSE = "check_vote_response";
+
 
     public interface OnClientMessageListener {
         void onReceivedSignInMessage(SignInMessage message);
@@ -21,15 +44,18 @@ public class OpenCommunicationChannel {
     public interface OnServerMessageListener {
         void onServerPublicKeyReceived(String key);
 
+        void onVoteResultsReceived(VotingResultMessage message);
+
         void onSignedBulletinReceived(SignedBulletinMessage message);
 
-        void onVotingFinish(VotingResultMessage message);
+        void onVoteStatusChanged(boolean isRunning);
 
         void onSignInResponseReceived(boolean isOk);
 
         void onRegisterBulletinResponseReceived(boolean isOk);
 
         void onBulletinCountedResponseReceived(boolean isOk);
+
         void onCheckVoteResponseReceived(String bulletin);
     }
 
@@ -38,8 +64,12 @@ public class OpenCommunicationChannel {
             sInstance.publishServerPublicKey(publicKey);
         }
 
-        public void publishVotingResults(VotingResultMessage votingResults) {
-            sInstance.publishVotingResults(votingResults);
+        public void publishVoteResults(VotingResultMessage message){
+            sInstance.publishVoteResults(message);
+        }
+
+        public void sendVoteStatusChanged(Boolean isRunning) {
+            sInstance.sendVoteStatusChanged(isRunning);
         }
 
         public void sendSignInResponse(String id, boolean isOk) {
@@ -58,7 +88,7 @@ public class OpenCommunicationChannel {
             sInstance.sendSignedBulletinMessage(message);
         }
 
-        public void sendCheckVoteResponse(String label, String  bulletin){
+        public void sendCheckVoteResponse(String label, String bulletin) {
             sInstance.sendCheckVoteResponse(label, bulletin);
         }
 
@@ -82,21 +112,6 @@ public class OpenCommunicationChannel {
             sInstance.sendCheckVoteRequest(label);
         }
     }
-
-    private static final String TAG = OpenCommunicationChannel.class.getSimpleName();
-
-    private static final String SIGN_IN_MESSAGE = "sign_in_message";
-    private static final String REGISTER_BULLETIN_MESSAGE = "register_bulletin_message";
-    private static final String VOTING_START = "voting_start";
-    private static final String SECRET_KEY_MESSAGE = "secret_key_message";
-    private static final String SIGN_IN_RESPONSE = "sign_in_response";
-    private static final String REGISTER_BULLETIN_RESPONSE = "register_bulletin_response";
-    private static final String BULLETIN_COUNTED = "bulletin_counted";
-    private static final String SERVER_PUBLIC_KEY = "server_public_key";
-    private static final String VOTING_RESULTS = "voting_results";
-    private static final String SIGNED_BULLETIN_MESSAGE = "signed_bulletin_message";
-    private static final String CHECK_VOTE_REQUEST = "check_vote_request";
-    private static final String CHECK_VOTE_RESPONSE = "check_vote_response";
 
 
     private static OpenCommunicationChannel sInstance;
@@ -299,17 +314,38 @@ public class OpenCommunicationChannel {
                 });
     }
 
-    private void subscribeToVotingResults() {
-        mDatabaseReference.child(VOTING_RESULTS)
+    private void subscribeToVoteResults() {
+        mDatabaseReference.child(VOTE_RESULTS)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        VotingResultMessage votingResults = dataSnapshot
-                                .getValue(VotingResultMessage.class);
-                        if (votingResults != null) {
-                            Log.d(TAG, "Voting results received");
+                        VotingResultMessage message = dataSnapshot.getValue(VotingResultMessage.class);
+                        if (message != null) {
+                            Log.d(TAG, "Vote results published");
                             if (mServerMessageListener != null) {
-                                mServerMessageListener.onVotingFinish(votingResults);
+                                mServerMessageListener.onVoteResultsReceived(message);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+    }
+
+    private void subscribeToVoteStatusChange() {
+        mDatabaseReference.child(VOTE_IS_RUNNING)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        Boolean isRunning = dataSnapshot.getValue(Boolean.class);
+                        if (isRunning != null) {
+                            Log.d(TAG, "Vote status changed");
+                            if (mServerMessageListener != null) {
+                                mServerMessageListener.onVoteStatusChanged(isRunning);
+                                mDatabaseReference.child(VOTE_IS_RUNNING).setValue(null);
                             }
                         }
                     }
@@ -373,8 +409,12 @@ public class OpenCommunicationChannel {
         mDatabaseReference.child(SERVER_PUBLIC_KEY).setValue(publicKey);
     }
 
-    private void publishVotingResults(VotingResultMessage votingResults) {
-        mDatabaseReference.child(VOTING_RESULTS).setValue(votingResults);
+    private void publishVoteResults(VotingResultMessage message){
+        mDatabaseReference.child(VOTE_RESULTS).setValue(message);
+    }
+
+    private void sendVoteStatusChanged(Boolean isRunning) {
+        mDatabaseReference.child(VOTE_IS_RUNNING).setValue(isRunning);
     }
 
     private void sendSignInMessage(SignInMessage message) {
@@ -437,9 +477,10 @@ public class OpenCommunicationChannel {
         subscribeToRegisterBulletinResponse(id);
         subscribeToServerPublicKey();
         subscribeToSignInResponse(id);
-        subscribeToVotingResults();
+        subscribeToVoteStatusChange();
         subscribeToSignedBulletinMessage(id);
         subscribeToCheckVoteResponse(label);
+        subscribeToVoteResults();
         return new ClientRequestHelper();
     }
 }

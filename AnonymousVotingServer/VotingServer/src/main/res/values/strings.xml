@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AnonymousVotingServer</string>
+    <string name="app_name">Сервер</string>
 
     <string name="candidate1">Кандидат №1: </string>
     <string name="candidate2">Кандидат №2: </string>
@@ -10,4 +10,5 @@
 
     <string name="start_voting">Начать голосование</string>
     <string name="finish_voting">Окончить голосование</string>
+    <string name="publish_results">Опубликовать результаты</string>
 </resources>

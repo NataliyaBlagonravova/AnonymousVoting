@@ -1,5 +1,6 @@
 package com.blagonravovan.anonymousvotingclient;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -9,7 +10,6 @@ import android.widget.RatingBar;
 import android.widget.Toast;
 
 import com.blagonravovan.cryptolibrary.CryptographicTools;
-
 import com.blagonravovan.cryptolibrary.KeyStorage;
 import com.blagonravovan.cryptolibrary.OpenCommunicationChannel;
 import com.blagonravovan.cryptolibrary.messages.RegisterBulletinMessage;
@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,15 +35,18 @@ public class MainActivity extends AppCompatActivity {
 
     private Button mSendBulletinButton;
     private Button mCheckBulletinButton;
+    private Button mShowResultButton;
 
     private RatingBar mRatingCandidate1;
     private RatingBar mRatingCandidate2;
     private RatingBar mRatingCandidate3;
     private RatingBar mRatingCandidate4;
     private RatingBar mRatingCandidate5;
-    
+
     private String mId;
     private String mLabel;
+
+    private ArrayList<String> mResults;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -64,6 +68,13 @@ public class MainActivity extends AppCompatActivity {
                     public void onServerPublicKeyReceived(String key) {
                         Log.d(TAG, "onServerPublicKeyReceived");
                         mServerPublicKey = KeyStorage.stringToPublicKey(key);
+                    }
+
+                    @Override
+                    public void onVoteResultsReceived(VotingResultMessage message) {
+                        Log.d(TAG, "onVoteResultsReceived");
+                        mShowResultButton.setEnabled(true);
+                        mResults = message.getResulst();
                     }
 
                     @Override
@@ -90,9 +101,22 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onVotingFinish(VotingResultMessage message) {
-                        //TODO
-
+                    public void onVoteStatusChanged(boolean isRunning) {
+                        if (isRunning) {
+                            Log.d(TAG, "Vote starts");
+                            mShowResultButton.setEnabled(false);
+                            mCheckBulletinButton.setEnabled(false);
+                            mSendBulletinButton.setEnabled(false);
+                            clearRating();
+                            disabledRating();
+                            SignInMessage signInMessage = new SignInMessage();
+                            signInMessage.setId(mId);
+                            signInMessage.setPublicKey(KeyStorage.keyToString(mKeyStorage.getPublicKey()));
+                            mRequestHelper.sendSignInMessage(signInMessage);
+                        }else {
+                            Log.d(TAG, "Vote finished");
+                            mSendBulletinButton.setEnabled(false);
+                        }
                     }
 
                     @Override
@@ -103,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
                             enabledRating();
                             Toast.makeText(MainActivity.this,
                                     R.string.you_can_vote, Toast.LENGTH_SHORT).show();
-                        }else {
+                        } else {
                             Toast.makeText(MainActivity.this,
                                     R.string.you_can_not_vote, Toast.LENGTH_SHORT).show();
                         }
@@ -112,10 +136,10 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onRegisterBulletinResponseReceived(boolean isOk) {
                         Log.d(TAG, "onSignInResponseReceived: " + isOk);
-                        if (isOk){
+                        if (isOk) {
                             Toast.makeText(MainActivity.this,
                                     R.string.bulletin_was_register, Toast.LENGTH_SHORT).show();
-                        }else {
+                        } else {
                             Toast.makeText(MainActivity.this,
                                     R.string.bulletin_was_not_register, Toast.LENGTH_SHORT).show();
                         }
@@ -124,13 +148,13 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onBulletinCountedResponseReceived(boolean isOk) {
                         Log.d(TAG, "onBulletinCountedResponseReceived: " + isOk);
-                        if (isOk){
+                        if (isOk) {
                             Toast.makeText(MainActivity.this,
                                     R.string.bulletin_counted, Toast.LENGTH_SHORT).show();
                             mSendBulletinButton.setEnabled(false);
                             mCheckBulletinButton.setEnabled(true);
                             disabledRating();
-                        }else {
+                        } else {
                             Toast.makeText(MainActivity.this,
                                     R.string.bulletin_not_counted, Toast.LENGTH_SHORT).show();
                         }
@@ -145,11 +169,6 @@ public class MainActivity extends AppCompatActivity {
                                 .show();
                     }
                 }, mId, mLabel);
-
-        SignInMessage signInMessage = new SignInMessage();
-        signInMessage.setId(mId);
-        signInMessage.setPublicKey(KeyStorage.keyToString(mKeyStorage.getPublicKey()));
-        mRequestHelper.sendSignInMessage(signInMessage);
     }
 
 
@@ -161,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 Math.round(mRatingCandidate5.getRating());
     }
 
-    private void disabledRating(){
+    private void disabledRating() {
         mRatingCandidate1.setEnabled(false);
         mRatingCandidate2.setEnabled(false);
         mRatingCandidate3.setEnabled(false);
@@ -169,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         mRatingCandidate5.setEnabled(false);
     }
 
-    private void enabledRating(){
+    private void enabledRating() {
         mRatingCandidate1.setEnabled(true);
         mRatingCandidate2.setEnabled(true);
         mRatingCandidate3.setEnabled(true);
@@ -177,6 +196,13 @@ public class MainActivity extends AppCompatActivity {
         mRatingCandidate5.setEnabled(true);
     }
 
+    private void clearRating() {
+        mRatingCandidate1.setRating(0);
+        mRatingCandidate2.setRating(0);
+        mRatingCandidate3.setRating(0);
+        mRatingCandidate4.setRating(0);
+        mRatingCandidate5.setRating(0);
+    }
 
 
     private void initUI() {
@@ -207,6 +233,17 @@ public class MainActivity extends AppCompatActivity {
                 mRequestHelper.sendCheckVoteRequest(mLabel);
             }
         });
+
+        mShowResultButton = (Button) findViewById(R.id.show_result);
+        mShowResultButton.setEnabled(false);
+        mShowResultButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = ResultActivity.newIntent(MainActivity.this, mResults);
+                startActivity(intent);
+            }
+        });
+
     }
 
     private RegisterBulletinMessage createBulletinMessage(String bulletin) {

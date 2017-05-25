@@ -3,6 +3,7 @@ package com.blagonravovan.anonymousvotingserver;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -17,8 +18,11 @@ import com.blagonravovan.cryptolibrary.messages.RegisterBulletinMessage;
 import com.blagonravovan.cryptolibrary.messages.SecretKeyMessage;
 import com.blagonravovan.cryptolibrary.messages.SignInMessage;
 import com.blagonravovan.cryptolibrary.messages.SignedBulletinMessage;
+import com.blagonravovan.cryptolibrary.messages.VotingResultMessage;
 
 import java.security.Key;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -31,12 +35,13 @@ public class MainActivity extends AppCompatActivity {
     OpenCommunicationChannel mOpenChannel;
     OpenCommunicationChannel.ServerRequestHelper mRequestHelper;
 
-    private TextView mCounterTextView;
     private TextView[] mRatingTextViews;
     private Button mStartFinishButton;
+    private Button mPublishResultsButton;
 
     private int[] mRating;
-    int mBulletinCounter = 0;
+
+    private boolean isRunning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,10 +53,6 @@ public class MainActivity extends AppCompatActivity {
 
         mVotingDatabase = VotingDatabase.getInstance();
         mBulletinDatabase = BulletinDatabase.getInstance();
-
-        mVotingDatabase.clear();
-        mBulletinDatabase.clear();
-
 
         mOpenChannel = OpenCommunicationChannel.getInstance();
         mRequestHelper = mOpenChannel.registerAsServer(new OpenCommunicationChannel.OnClientMessageListener() {
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isOk) {
                     mVotingDatabase.addUserAsVoted(message.getId());
 
-                    String sign = CryptographicTools.sign(message.getBulletin(),
+                    String sign = CryptographicTools.signMessage(message.getBulletin(),
                             mKeyStorage.getPrivateKey());
                     SignedBulletinMessage bulletinMessage = new SignedBulletinMessage();
                     bulletinMessage.setId(message.getId());
@@ -129,15 +130,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         mRequestHelper.publishServerPublicKey(KeyStorage.keyToString(mKeyStorage.getPublicKey()));
+        mRequestHelper.publishVoteResults(null);
 
     }
 
     private void initUI() {
-        mCounterTextView = (TextView) findViewById(R.id.counter);
-        mCounterTextView.setText(String.valueOf(mBulletinCounter));
-
         mRatingTextViews = new TextView[]{
                 (TextView) findViewById(R.id.rating1),
                 (TextView) findViewById(R.id.rating2),
@@ -147,6 +145,42 @@ public class MainActivity extends AppCompatActivity {
         };
 
         mStartFinishButton = (Button) findViewById(R.id.start_finish_voting);
+        mStartFinishButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isRunning = !isRunning;
+                mRequestHelper.sendVoteStatusChanged(isRunning);
+
+                if (isRunning){
+                    mStartFinishButton.setText(getResources().getString(R.string.finish_voting));
+                    mVotingDatabase.clear();
+                    mBulletinDatabase.clear();
+                    clearResults();
+                    showRating();
+                    mPublishResultsButton.setEnabled(false);
+
+                }else {
+                    mStartFinishButton.setText(getResources().getString(R.string.start_voting));
+                    mPublishResultsButton.setEnabled(true);
+
+                }
+            }
+        });
+
+        mPublishResultsButton = (Button) findViewById(R.id.publish_results);
+        mPublishResultsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                VotingResultMessage message = new VotingResultMessage();
+                ArrayList<String> results = new ArrayList<String>();
+                for (int i = 0; i < mRating.length; ++i) {
+                   results.add(mRatingTextViews[i].getText().toString());
+                }
+                message.setResulst(results);
+                mRequestHelper.publishVoteResults(message);
+            }
+        });
+        mPublishResultsButton.setEnabled(false);
 
         mRating = new int[]{0, 0, 0, 0, 0};
 
@@ -173,8 +207,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateCounter() {
-        mBulletinCounter += 1;
-        mCounterTextView.setText(String.valueOf(mBulletinCounter));
+    private void clearResults(){
+        for (int i = 0; i < mRating.length; ++i) {
+            mRating[i] = 0;
+        }
     }
 }
