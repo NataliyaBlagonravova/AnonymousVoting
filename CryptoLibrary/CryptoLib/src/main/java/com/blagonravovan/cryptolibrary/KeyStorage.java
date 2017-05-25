@@ -1,5 +1,4 @@
-package com.blagonravovan.anonymousvotingserver;
-
+package com.blagonravovan.cryptolibrary;
 
 import android.content.Context;
 import android.preference.PreferenceManager;
@@ -15,19 +14,24 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 
-class KeyStorage {
+public class KeyStorage {
     private static final String TAG = KeyStorage.class.getSimpleName();
 
     private static final String ALGORITHM_RSA = "RSA";
     private static final String ALGORITHM_AES = "AES";
+
     private static final int KEY_SIZE = 2048;
+    private static final int SECRET_KEY_SIZE = 256;
+
 
     private static final String PREF_PRIVATE_KEY = "pref_private_key";
     private static final String PREF_PUBLIC_KEY = "pref_public_key";
+    private static final String PREF_SRCRET_KEY = "pref_secret_key";
 
     private static KeyStorage sInstance;
     private Context mContext;
@@ -48,8 +52,21 @@ class KeyStorage {
 
             savePublicKey(keyPair.getPublic());
             savePrivateKey(keyPair.getPrivate());
+
+            generateSessionKey();
         } catch (Exception e) {
             Log.e(TAG, "Generating key pair error");
+        }
+    }
+
+    public void generateSessionKey() {
+        try {
+            KeyGenerator keyGenerator = KeyGenerator.getInstance(ALGORITHM_AES);
+            keyGenerator.init(SECRET_KEY_SIZE);
+            SecretKey secretKey = keyGenerator.generateKey();
+            saveSecretKey(secretKey);
+        } catch (Exception e) {
+            Log.e(TAG, "Generating sectet key error");
         }
     }
 
@@ -81,6 +98,11 @@ class KeyStorage {
         }
     }
 
+    public static SecretKey stringToSecretKey(String keyString) {
+        byte[] keyBytes = Base64.decode(keyString, Base64.DEFAULT);
+        return new SecretKeySpec(keyBytes, 0, keyBytes.length, ALGORITHM_AES);
+    }
+
     private void savePublicKey(Key publicKey) {
         PreferenceManager.getDefaultSharedPreferences(mContext)
                 .edit()
@@ -95,6 +117,13 @@ class KeyStorage {
                 .apply();
     }
 
+    private void saveSecretKey(Key secretKey) {
+        PreferenceManager.getDefaultSharedPreferences(mContext)
+                .edit()
+                .putString(PREF_SRCRET_KEY, keyToString(secretKey))
+                .apply();
+    }
+
     public PrivateKey getPrivateKey() {
         return stringToPrivateKey(PreferenceManager.getDefaultSharedPreferences(mContext)
                 .getString(PREF_PRIVATE_KEY, null));
@@ -105,10 +134,8 @@ class KeyStorage {
                 .getString(PREF_PUBLIC_KEY, null));
     }
 
-    public static SecretKey stringToSecretKey(String keyString) {
-        byte[] keyBytes = Base64.decode(keyString, Base64.DEFAULT);
-        return new SecretKeySpec(keyBytes, 0, keyBytes.length, ALGORITHM_AES);
+    public SecretKey getSecretKey() {
+        return stringToSecretKey(PreferenceManager.getDefaultSharedPreferences(mContext)
+                .getString(PREF_SRCRET_KEY, null));
     }
-
-
 }

@@ -1,4 +1,4 @@
-package com.blagonravovan.anonymousvotingclient.messages;
+package com.blagonravovan.cryptolibrary.messages;
 
 
 public class RegisterBulletinMessage {

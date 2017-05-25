@@ -1,1 +1,4 @@
 include ':VotingServer'
+
+include ':CryptoLib'
+project(':CryptoLib').projectDir = new File('../CryptoLibrary/CryptoLib/')

@@ -7,4 +7,7 @@
     <string name="candidate4">Кандидат №4: </string>
     <string name="candidate5">Кандидат №5: </string>
     <string name="counter">Принято биллютеней: </string>
+
+    <string name="start_voting">Начать голосование</string>
+    <string name="finish_voting">Окончить голосование</string>
 </resources>

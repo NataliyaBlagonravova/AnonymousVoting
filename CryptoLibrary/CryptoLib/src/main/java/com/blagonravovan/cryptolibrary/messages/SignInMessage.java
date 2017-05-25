@@ -1,4 +1,4 @@
-package com.blagonravovan.anonymousvotingserver.messages;
+package com.blagonravovan.cryptolibrary.messages;
 
 
 public class SignInMessage {

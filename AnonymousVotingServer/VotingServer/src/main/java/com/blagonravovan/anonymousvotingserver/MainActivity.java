@@ -3,16 +3,23 @@ package com.blagonravovan.anonymousvotingserver;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.blagonravovan.anonymousvotingserver.database.BulletinDatabase;
 import com.blagonravovan.anonymousvotingserver.database.VotingDatabase;
-import com.blagonravovan.anonymousvotingserver.messages.RegisterBulletinMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SecretKeyMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SignInMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SignedBulletinMessage;
+
+
+import com.blagonravovan.cryptolibrary.CryptographicTools;
+import com.blagonravovan.cryptolibrary.KeyStorage;
+import com.blagonravovan.cryptolibrary.OpenCommunicationChannel;
+import com.blagonravovan.cryptolibrary.messages.RegisterBulletinMessage;
+import com.blagonravovan.cryptolibrary.messages.SecretKeyMessage;
+import com.blagonravovan.cryptolibrary.messages.SignInMessage;
+import com.blagonravovan.cryptolibrary.messages.SignedBulletinMessage;
 
 import java.security.Key;
+
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -26,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mCounterTextView;
     private TextView[] mRatingTextViews;
+    private Button mStartFinishButton;
 
     private int[] mRating;
     int mBulletinCounter = 0;
@@ -62,12 +70,16 @@ public class MainActivity extends AppCompatActivity {
                 mRequestHelper.sendSignInResponse(message.getId(), isOk);
             }
 
+
+
             @Override
             public void onReceivedRegisterBulletinMessage(RegisterBulletinMessage message) {
                 Log.d(TAG, "onReceivedRegisterBulletinMessage");
                 Key publicKey = mVotingDatabase.getPublicKey(message.getId());
-                boolean isOk = CryptographicTools.checkHash(message.getBulletin(),
+                boolean isHashOk = CryptographicTools.checkHash(message.getBulletin(),
                         message.getSign(), publicKey);
+                boolean isFistUserBulletin  = !mVotingDatabase.isUserVoted(message.getId());
+                boolean isOk = isHashOk && isFistUserBulletin;
                 if (isOk) {
                     mVotingDatabase.addUserAsVoted(message.getId());
 
@@ -105,6 +117,16 @@ public class MainActivity extends AppCompatActivity {
 
                 mRequestHelper.sendBulletinCountedResponse(label, isOK);
             }
+
+            @Override
+            public void onReceivedCheckVoteRequest(String label) {
+                if (label != null) {
+                    Log.d(TAG, "onReceivedCheckVoteRequest");
+                    String bulletin = mBulletinDatabase.getUserBulletin(label);
+                    mRequestHelper.sendCheckVoteResponse(label, bulletin);
+                }
+
+            }
         });
 
 
@@ -123,6 +145,8 @@ public class MainActivity extends AppCompatActivity {
                 (TextView) findViewById(R.id.rating4),
                 (TextView) findViewById(R.id.rating5)
         };
+
+        mStartFinishButton = (Button) findViewById(R.id.start_finish_voting);
 
         mRating = new int[]{0, 0, 0, 0, 0};
 

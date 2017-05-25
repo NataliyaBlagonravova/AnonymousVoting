@@ -1,4 +1,4 @@
-package com.blagonravovan.anonymousvotingserver;
+package com.blagonravovan.cryptolibrary;
 
 
 import android.util.Base64;
@@ -114,9 +114,9 @@ public class CryptographicTools {
         return true;
     }
 
-    public static String sign(String message, Key privateKey) {
-        byte[] d1 = Base64.decode(message, Base64.DEFAULT);
-        return Base64.encodeToString(encryptMessage(hash(d1), privateKey), Base64.DEFAULT);
+    public static String signMessage(String message, Key privateKey) {
+        byte[] messageBytes = Base64.decode(message, Base64.DEFAULT);
+        return Base64.encodeToString(encryptMessage(hash(messageBytes), privateKey), Base64.DEFAULT);
     }
 }
 

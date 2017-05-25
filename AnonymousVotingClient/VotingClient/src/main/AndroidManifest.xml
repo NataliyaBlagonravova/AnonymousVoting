@@ -20,7 +20,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.blagonravovan.anonymousvotingclient.MainActivity"/>
+        <activity
+            android:name="com.blagonravovan.anonymousvotingclient.MainActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 

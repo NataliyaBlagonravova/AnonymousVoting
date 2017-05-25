@@ -1,75 +1,85 @@
-package com.blagonravovan.anonymousvotingserver;
+package com.blagonravovan.cryptolibrary;
 
 import android.util.Log;
 
-import com.blagonravovan.anonymousvotingserver.messages.RegisterBulletinMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SecretKeyMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SignInMessage;
-import com.blagonravovan.anonymousvotingserver.messages.SignedBulletinMessage;
-import com.blagonravovan.anonymousvotingserver.messages.VotingResultMessage;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.blagonravovan.cryptolibrary.messages.*;
+import com.google.firebase.database.*;
 
 
 public class OpenCommunicationChannel {
 
-    interface OnClientMessageListener{
+    public interface OnClientMessageListener {
         void onReceivedSignInMessage(SignInMessage message);
+
         void onReceivedRegisterBulletinMessage(RegisterBulletinMessage message);
+
         void onReceivedSecretKeyMessage(SecretKeyMessage message);
+
+        void onReceivedCheckVoteRequest(String label);
     }
 
-    interface OnServerMessageListener{
+    public interface OnServerMessageListener {
         void onServerPublicKeyReceived(String key);
+
         void onSignedBulletinReceived(SignedBulletinMessage message);
+
         void onVotingFinish(VotingResultMessage message);
+
         void onSignInResponseReceived(boolean isOk);
+
         void onRegisterBulletinResponseReceived(boolean isOk);
+
         void onBulletinCountedResponseReceived(boolean isOk);
+        void onCheckVoteResponseReceived(String bulletin);
     }
 
-    public class ServerRequestHelper{
-        public void publishServerPublicKey(String publicKey){
+    public class ServerRequestHelper {
+        public void publishServerPublicKey(String publicKey) {
             sInstance.publishServerPublicKey(publicKey);
         }
 
-        public void publishVotingResults(VotingResultMessage votingResults){
+        public void publishVotingResults(VotingResultMessage votingResults) {
             sInstance.publishVotingResults(votingResults);
         }
 
-        public void sendSignInResponse(String id, boolean isOk){
+        public void sendSignInResponse(String id, boolean isOk) {
             sInstance.sendSignInResponse(id, isOk);
         }
 
-        public void sendRegisterBulletinResponse(String id, boolean isOk){
+        public void sendRegisterBulletinResponse(String id, boolean isOk) {
             sInstance.sendRegisterBulletinResponse(id, isOk);
         }
 
-        public void sendBulletinCountedResponse(String label, boolean isOk){
+        public void sendBulletinCountedResponse(String label, boolean isOk) {
             sInstance.sendBulletinCountedResponse(label, isOk);
         }
 
-        public void sendSignedBulletinMessage(SignedBulletinMessage message){
+        public void sendSignedBulletinMessage(SignedBulletinMessage message) {
             sInstance.sendSignedBulletinMessage(message);
+        }
+
+        public void sendCheckVoteResponse(String label, String  bulletin){
+            sInstance.sendCheckVoteResponse(label, bulletin);
         }
 
 
     }
 
-    public class ClientRequestHelper{
-        public void sendSignInMessage(SignInMessage message){
+    public class ClientRequestHelper {
+        public void sendSignInMessage(SignInMessage message) {
             sInstance.sendSignInMessage(message);
         }
 
-        public void sendRegisterBulletinMessage(RegisterBulletinMessage message){
+        public void sendRegisterBulletinMessage(RegisterBulletinMessage message) {
             sInstance.sendRegisterBulletinMessage(message);
         }
 
-        public void sendSecretKeyMessage(SecretKeyMessage message){
+        public void sendSecretKeyMessage(SecretKeyMessage message) {
             sInstance.sendSecretKeyMessage(message);
+        }
+
+        public void sendCheckVoteRequest(String label) {
+            sInstance.sendCheckVoteRequest(label);
         }
     }
 
@@ -85,10 +95,12 @@ public class OpenCommunicationChannel {
     private static final String SERVER_PUBLIC_KEY = "server_public_key";
     private static final String VOTING_RESULTS = "voting_results";
     private static final String SIGNED_BULLETIN_MESSAGE = "signed_bulletin_message";
+    private static final String CHECK_VOTE_REQUEST = "check_vote_request";
+    private static final String CHECK_VOTE_RESPONSE = "check_vote_response";
 
 
     private static OpenCommunicationChannel sInstance;
-    private  DatabaseReference mDatabaseReference;
+    private DatabaseReference mDatabaseReference;
 
     private OnClientMessageListener mClientMessageListener;
     private OnServerMessageListener mServerMessageListener;
@@ -112,10 +124,11 @@ public class OpenCommunicationChannel {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         SignInMessage message = dataSnapshot.getValue(SignInMessage.class);
-                        if (message != null){
-                            Log.d(TAG, "New sign in message");
-                            if (mClientMessageListener != null){
+                        if (message != null) {
+                            Log.d(TAG, "New signMessage in message");
+                            if (mClientMessageListener != null) {
                                 mClientMessageListener.onReceivedSignInMessage(message);
+                                mDatabaseReference.child(SIGN_IN_MESSAGE).setValue(null);
                             }
                         }
                     }
@@ -125,6 +138,7 @@ public class OpenCommunicationChannel {
 
                     }
                 });
+
     }
 
     private void subscribeToRegisterBulletinMessage() {
@@ -134,13 +148,15 @@ public class OpenCommunicationChannel {
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         RegisterBulletinMessage message = dataSnapshot.getValue
                                 (RegisterBulletinMessage.class);
-                        if (message != null){
+                        if (message != null) {
                             Log.d(TAG, "New register bulletin message");
-                            if (mClientMessageListener != null){
+                            if (mClientMessageListener != null) {
                                 mClientMessageListener.onReceivedRegisterBulletinMessage(message);
+                                mDatabaseReference.child(REGISTER_BULLETIN_MESSAGE).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -155,13 +171,15 @@ public class OpenCommunicationChannel {
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         SecretKeyMessage message = dataSnapshot.getValue
                                 (SecretKeyMessage.class);
-                        if (message != null){
+                        if (message != null) {
                             Log.d(TAG, "New secret message");
-                            if (mClientMessageListener != null){
+                            if (mClientMessageListener != null) {
                                 mClientMessageListener.onReceivedSecretKeyMessage(message);
+                                mDatabaseReference.child(SECRET_KEY_MESSAGE).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -169,19 +187,21 @@ public class OpenCommunicationChannel {
                 });
     }
 
-    private void subscribeToSignInResponse(String id) {
+    private void subscribeToSignInResponse(final String id) {
         mDatabaseReference.child(id).child(SIGN_IN_RESPONSE)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         Boolean response = dataSnapshot.getValue(Boolean.class);
-                        if (response != null){
+                        if (response != null) {
                             Log.d(TAG, "Sign in response: " + response);
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onSignInResponseReceived(response);
+                                mDatabaseReference.child(id).child(SIGN_IN_RESPONSE).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -189,19 +209,21 @@ public class OpenCommunicationChannel {
                 });
     }
 
-    private void subscribeToRegisterBulletinResponse(String id) {
+    private void subscribeToRegisterBulletinResponse(final String id) {
         mDatabaseReference.child(id).child(REGISTER_BULLETIN_RESPONSE)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         Boolean response = dataSnapshot.getValue(Boolean.class);
-                        if (response != null){
+                        if (response != null) {
                             Log.d(TAG, "Register bulletin response: " + response);
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onRegisterBulletinResponseReceived(response);
+                                mDatabaseReference.child(id).child(REGISTER_BULLETIN_RESPONSE).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -209,26 +231,51 @@ public class OpenCommunicationChannel {
                 });
     }
 
-    private void subscribeToBulletinCountedResponse(String label) {
-        mDatabaseReference.child(label).child(REGISTER_BULLETIN_RESPONSE)
+    private void subscribeToBulletinCountedResponse(final String label) {
+        mDatabaseReference.child(label).child(BULLETIN_COUNTED)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         Boolean response = dataSnapshot.getValue(Boolean.class);
-                        if (response != null){
+                        if (response != null) {
                             Log.d(TAG, "Bulletin counted response: " + response);
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onBulletinCountedResponseReceived(response);
+                                mDatabaseReference.child(label).child(BULLETIN_COUNTED).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
                     }
                 });
+
     }
 
+    private void subscribeToCheckVoteResponse(final String label) {
+        mDatabaseReference.child(label).child(CHECK_VOTE_RESPONSE)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        String bulletin = dataSnapshot.getValue(String.class);
+                        if (bulletin != null) {
+                            Log.d(TAG, "Check vote response: " + bulletin);
+                            if (mServerMessageListener != null) {
+                                mServerMessageListener.onCheckVoteResponseReceived(bulletin);
+                                mDatabaseReference.child(label).child(CHECK_VOTE_RESPONSE).setValue(null);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
+    }
 
 
     private void subscribeToServerPublicKey() {
@@ -237,13 +284,14 @@ public class OpenCommunicationChannel {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         String key = dataSnapshot.getValue(String.class);
-                        if (key != null){
+                        if (key != null) {
                             Log.d(TAG, "Sign in response");
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onServerPublicKeyReceived(key);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -258,13 +306,14 @@ public class OpenCommunicationChannel {
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         VotingResultMessage votingResults = dataSnapshot
                                 .getValue(VotingResultMessage.class);
-                        if (votingResults != null){
+                        if (votingResults != null) {
                             Log.d(TAG, "Voting results received");
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onVotingFinish(votingResults);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -272,20 +321,46 @@ public class OpenCommunicationChannel {
                 });
     }
 
-    private void subscribeToSignedBulletinMessage(String id) {
+    private void subscribeToChangeVote() {
+        mDatabaseReference.child(CHECK_VOTE_REQUEST)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        String label = dataSnapshot
+                                .getValue(String.class);
+                        if (label != null) {
+                            Log.d(TAG, "Check vote");
+                            if (mClientMessageListener != null) {
+                                mClientMessageListener.onReceivedCheckVoteRequest(label);
+                                mDatabaseReference.child(CHECK_VOTE_REQUEST).setValue(null);
+                            }
+
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+    }
+
+    private void subscribeToSignedBulletinMessage(final String id) {
         mDatabaseReference.child(id).child(SIGNED_BULLETIN_MESSAGE)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         SignedBulletinMessage message = dataSnapshot
                                 .getValue(SignedBulletinMessage.class);
-                        if (message != null){
+                        if (message != null) {
                             Log.d(TAG, "Signed bulletin message");
-                            if (mServerMessageListener != null){
+                            if (mServerMessageListener != null) {
                                 mServerMessageListener.onSignedBulletinReceived(message);
+                                mDatabaseReference.child(id).child(SIGNED_BULLETIN_MESSAGE).setValue(null);
                             }
                         }
                     }
+
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -294,63 +369,69 @@ public class OpenCommunicationChannel {
     }
 
 
-
-
-
-    private void publishServerPublicKey(String publicKey){
+    private void publishServerPublicKey(String publicKey) {
         mDatabaseReference.child(SERVER_PUBLIC_KEY).setValue(publicKey);
     }
 
-    private void publishVotingResults(VotingResultMessage votingResults){
+    private void publishVotingResults(VotingResultMessage votingResults) {
         mDatabaseReference.child(VOTING_RESULTS).setValue(votingResults);
     }
 
-    private void sendSignInMessage(SignInMessage message){
+    private void sendSignInMessage(SignInMessage message) {
         mDatabaseReference.child(SIGN_IN_MESSAGE).setValue(message);
     }
 
-    private void sendRegisterBulletinMessage(RegisterBulletinMessage message){
+    private void sendRegisterBulletinMessage(RegisterBulletinMessage message) {
         mDatabaseReference.child(REGISTER_BULLETIN_MESSAGE).setValue(message);
     }
 
-    private void sendSecretKeyMessage(SecretKeyMessage message){
+    private void sendSecretKeyMessage(SecretKeyMessage message) {
         mDatabaseReference.child(SECRET_KEY_MESSAGE).setValue(message);
     }
 
-    private void sendSignInResponse(String id, boolean isOk){
+    private void sendSignInResponse(String id, boolean isOk) {
         mDatabaseReference.child(id).child(SIGN_IN_RESPONSE).setValue(isOk);
     }
 
 
-    private void sendRegisterBulletinResponse(String id, boolean isOk){
+    private void sendRegisterBulletinResponse(String id, boolean isOk) {
         mDatabaseReference.child(id).child(REGISTER_BULLETIN_RESPONSE).setValue(isOk);
     }
 
-    private void sendBulletinCountedResponse(String label, boolean isOk){
+    private void sendBulletinCountedResponse(String label, boolean isOk) {
         mDatabaseReference.child(label).child(BULLETIN_COUNTED).setValue(isOk);
     }
 
-    private void sendSignedBulletinMessage(SignedBulletinMessage message){
+    private void sendSignedBulletinMessage(SignedBulletinMessage message) {
         mDatabaseReference.child(message.getId()).child(SIGNED_BULLETIN_MESSAGE).setValue(message);
     }
 
-    private void setClientMessageListener(OnClientMessageListener listener){
+    private void sendCheckVoteRequest(String label) {
+        mDatabaseReference.child(CHECK_VOTE_REQUEST).setValue(label);
+    }
+
+    private void sendCheckVoteResponse(String label, String bulletin) {
+        mDatabaseReference.child(label).child(CHECK_VOTE_RESPONSE).setValue(bulletin);
+    }
+
+    private void setClientMessageListener(OnClientMessageListener listener) {
         mClientMessageListener = listener;
     }
 
-    private void setServerMessageListener(OnServerMessageListener listener){
+    private void setServerMessageListener(OnServerMessageListener listener) {
         mServerMessageListener = listener;
     }
 
-    public ServerRequestHelper registerAsServer(OnClientMessageListener listener){
+    public ServerRequestHelper registerAsServer(OnClientMessageListener listener) {
         setClientMessageListener(listener);
         subscribeToSignInMessage();
         subscribeToSecretKeyMessage();
         subscribeToRegisterBulletinMessage();
+        subscribeToChangeVote();
         return new ServerRequestHelper();
     }
 
-    public ClientRequestHelper registerAsClient(OnServerMessageListener listener, String id, String label){
+    public ClientRequestHelper registerAsClient(OnServerMessageListener listener, String id, String label) {
         setServerMessageListener(listener);
         subscribeToBulletinCountedResponse(label);
         subscribeToRegisterBulletinResponse(id);
@@ -358,11 +439,7 @@ public class OpenCommunicationChannel {
         subscribeToSignInResponse(id);
         subscribeToVotingResults();
         subscribeToSignedBulletinMessage(id);
+        subscribeToCheckVoteResponse(label);
         return new ClientRequestHelper();
-
     }
-
-
-
-
 }

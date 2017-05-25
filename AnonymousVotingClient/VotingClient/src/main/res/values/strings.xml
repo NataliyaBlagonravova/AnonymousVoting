@@ -12,4 +12,16 @@
     <string name="sign_in_error">Ошибка входа</string>
 
     <string name="send">Отправить</string>
+    <string name="check">Проверить биллетень</string>
+
+    <string name="you_can_vote">Вы можете голосовать</string>
+    <string name="you_can_not_vote">Вы не можете голосовать повторно</string>
+    <string name="bulletin_was_register">"Ваш бюллетень зарегестрирован</string>
+    <string name="bulletin_was_not_register">"Ваш бюллетень откланен"</string>
+    <string name="bulletin_counted">Ваш голос учтен</string>
+    <string name="bulletin_not_counted">Не удалось распознать ваш  бюллетень</string>
+    <string name="your_bulletin_is">Ваш бюллетень:  %1$s</string>
+
+
+
 </resources>

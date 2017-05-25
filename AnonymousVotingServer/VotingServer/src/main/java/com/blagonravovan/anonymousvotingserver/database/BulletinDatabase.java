@@ -32,4 +32,8 @@ public class BulletinDatabase {
         return mBulletins.containsKey(label);
     }
 
+    public String getUserBulletin(String label){
+        return mBulletins.get(label);
+    }
+
 }
