@@ -12,8 +12,8 @@
     <string name="sign_in">Учавствовать в выборах</string>
     <string name="sign_in_error">Ошибка входа</string>
 
-    <string name="send_bulletin">Отправить биллетень</string>
-    <string name="check_bulletin">Проверить биллетень</string>
+    <string name="send_bulletin">Отправить бюллетень</string>
+    <string name="check_bulletin">Проверить бюллетень</string>
     <string name="show_results">Посмотреть результаты</string>
 
     <string name="you_can_vote">Вы можете голосовать</string>
@@ -23,7 +23,5 @@
     <string name="bulletin_counted">Ваш голос учтен</string>
     <string name="bulletin_not_counted">Не удалось распознать ваш  бюллетень</string>
     <string name="your_bulletin_is">Ваш бюллетень:  %1$s</string>
-
-
-
+    
 </resources>
